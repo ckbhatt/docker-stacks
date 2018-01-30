@@ -3,7 +3,7 @@
 
 # Ubuntu 16.04 (xenial) from 2017-07-23
 # https://github.com/docker-library/official-images/commit/0ea9b38b835ffb656c497783321632ec7f87b60c
-FROM ubuntu@sha256:84c334414e2bfdcae99509a6add166bbb4fa4041dc3fa6af08046a66fed3005f
+FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
 LABEL maintainer="Jupyter Project <jupyter@googlegroups.com>"
 
@@ -35,7 +35,7 @@ RUN wget --quiet https://github.com/krallin/tini/releases/download/v0.10.0/tini 
 # Configure environment
 ENV CONDA_DIR=/opt/conda \
     SHELL=/bin/bash \
-    NB_USER=jovyan \
+    NB_USER=root \
     NB_UID=1000 \
     NB_GID=100 \
     LC_ALL=en_US.UTF-8 \
@@ -44,20 +44,16 @@ ENV CONDA_DIR=/opt/conda \
 ENV PATH=$CONDA_DIR/bin:$PATH \
     HOME=/home/$NB_USER
 
-ADD fix-permissions /usr/local/bin/fix-permissions
-# Create jovyan user with UID=1000 and in the 'users' group
-# and make sure these dirs are writable by the `users` group.
-RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
-    mkdir -p $CONDA_DIR && \
-    chown $NB_USER:$NB_GID $CONDA_DIR && \
-    fix-permissions $HOME && \
-    fix-permissions $CONDA_DIR
+## Create jovyan user with UID=1000 and in the 'users' group
+## and make sure these dirs are writable by the `users` group.
+#RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
+#    mkdir -p $CONDA_DIR && \
+#    chown $NB_USER:$NB_GID $CONDA_DIR && \
 
-USER $NB_USER
+#USER $NB_USER
 
-# Setup work directory for backward-compatibility
-RUN mkdir /home/$NB_USER/work && \
-    fix-permissions /home/$NB_USER
+## Setup work directory for backward-compatibility
+#RUN mkdir /home/$NB_USER/work && \
 
 # Install conda as jovyan and check the md5 sum provided on the download site
 ENV MINICONDA_VERSION 4.3.30
@@ -70,8 +66,7 @@ RUN cd /tmp && \
     $CONDA_DIR/bin/conda config --system --set auto_update_conda false && \
     $CONDA_DIR/bin/conda config --system --set show_channel_urls true && \
     $CONDA_DIR/bin/conda update --all --quiet --yes && \
-    conda clean -tipsy && \
-    fix-permissions $CONDA_DIR
+    conda clean -tipsy
 
 # Install Jupyter Notebook and Hub
 RUN conda install --quiet --yes \
@@ -81,8 +76,7 @@ RUN conda install --quiet --yes \
     && conda clean -tipsy && \
     jupyter labextension install @jupyterlab/hub-extension@^0.7.0 && \
     npm cache clean && \
-    rm -rf $CONDA_DIR/share/jupyter/lab/staging && \
-    fix-permissions $CONDA_DIR
+    rm -rf $CONDA_DIR/share/jupyter/lab/staging
 
 USER root
 
@@ -98,7 +92,6 @@ COPY start.sh /usr/local/bin/
 COPY start-notebook.sh /usr/local/bin/
 COPY start-singleuser.sh /usr/local/bin/
 COPY jupyter_notebook_config.py /etc/jupyter/
-RUN fix-permissions /etc/jupyter/
 
 # Switch back to jovyan to avoid accidental container runs as root
-USER $NB_USER
+USER root
