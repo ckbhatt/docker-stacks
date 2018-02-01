@@ -10,12 +10,7 @@ if [ $# -eq 0 ]; then
 else
     cmd=$*
 fi
-
-#if [ ! -z "$INSTALL_TF" ]; then
-#    echo "Installing tensorflow." 
-#    pip install tensorflow-gpu
-#fi
-    
+ 
 # Execute the command
 echo "Executing the command: $cmd"
 exec $cmd
